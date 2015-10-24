@@ -1,0 +1,17 @@
+#!/bin/bash -x
+# WRK_REPO_PATH default /repo
+WRK_MGR_DIR=$(dirname $(readlink -f ${0}))
+. ${WRK_MGR_DIR}/functions
+. ${WRK_MGR_DIR}/current-step
+start=${WRK_STEP_START}
+complete=${WRK_STEP_DONE}
+error=${WRK_STEP_ERROR}
+(
+    while ! [[ -e ${WRK_STEP_START} ]]; do printf "."; sleep 1; done
+    docker run --rm busybox /bin/echo 'Hello world'
+    echo
+    printf "$(now) Step ${WRK_STEP} complete.\n"
+) > ${WRK_STATUS_PATH}/${WRK_STEP}.status 2>&1
+
+touch ${complete}
+cat ${WRK_STATUS_PATH}/${WRK_STEP}.status 2>&1

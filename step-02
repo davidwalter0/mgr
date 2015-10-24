@@ -1,0 +1,44 @@
+#!/bin/bash -x
+# WRK_REPO_PATH default /repo
+echo WRK_REPO_PATH=${WRK_REPO_PATH:=/repo}
+echo WRK_REPOS=${WRK_REPO_LIST:=github.com/davidwalter0/repo}
+echo WRK_STEPS=${WRK_REPO_STEPS:=step-00 step-01 step-02}
+echo
+cd ${WRK_REPO_PATH}
+exit 3
+
+for repo in ${WRK_REPOS}; do
+    mkdir -p ${repo};
+    cd ${WRK_REPO_PATH}/${repo};
+    ( ./prepare.sh ) &> ${repo##*/}.repo-prepare.log &
+done
+wait
+maxtries=60
+
+# Exercise a wait loop sleeping for one second intervals
+steps=${WRK_STEPS}
+for step in $(eval echo {0..${WRK_STEPS}}); do
+    step=step-$(printf "%02d" ${WRK_STEP})
+    printf "$(now) Step ${WRK_STEP} sleep for 1 second intervals.\n"
+    touch /status/${WRK_STEP}
+    complete=/status/${WRK_STEP}.done
+    error=/status/${WRK_STEP}.error
+    for ((i=0; i<${maxtries}; i++)); do
+        printf "$(now) Step ${WRK_STEP} "
+        for ((i=0; i<60; i++)); do
+            if [[ -e "${complete}" ]]; then break; fi
+            if [[ -e "${error}" ]]; then break; fi
+            printf "."
+            sleep 1
+        done
+        if [[ -e "${complete}" ]]; then break; fi
+        if [[ -e "${error}" ]]; then break; fi
+        printf "\n"
+    done
+    if [[ -e "${error}" ]]; then break; fi
+done
+
+for repo in ${WRK_REPOS}; do
+    cd ${WRK_REPO_PATH}/${repo}
+    ( ./cleanup.sh ) &> ${repo##*/}.repo-cleanup.log &
+done

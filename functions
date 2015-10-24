@@ -1,0 +1,21 @@
+#!/bin/bash -x
+
+function now
+{
+    date +%Y.%m.%d.%H.%M.%S
+}
+
+printf "$(now) WRK_MGR_DIR=${WRK_MGR_DIR}\n"
+WRK_STATUS_PATH=${WRK_STATUS_PATH}
+WRK_REPO_PATH=${WRK_REPO_PATH}
+WRK_REPOS=${WRK_REPO_LIST}
+WRK_STEPS=${WRK_STEPS}
+WRK_STEP_RETRIES=${WRK_STEP_RETRIES}
+WRK_STEP=${WRK_STEP:=$(basename ${0##*/})}
+WRK_STEP=$(basename ${0##*/})
+printf "$(now) WRK_STATUS_PATH=${WRK_STATUS_PATH}\n"
+printf "$(now) WRK_REPO_PATH=${WRK_REPO_PATH}\n"
+printf "$(now) WRK_REPOS=${WRK_REPO_LIST}\n"
+printf "$(now) WRK_STEPS=${WRK_STEPS}\n"
+printf "$(now) WRK_STEP_RETRIES=${WRK_STEP_RETRIES}\n"
+printf "$(now) WRK_STEP=${WRK_STEP}\n"

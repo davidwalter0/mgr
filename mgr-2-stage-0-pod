@@ -1,0 +1,155 @@
+#!/bin/bash
+KUBECTL=bin/kubectl
+KUBECONFIG=.cfg/.k8s-master-01.cfg
+if (( 1 )) ; then
+${KUBECTL} config --kubeconfig=${KUBECONFIG} set-cluster k8s --server=https://k8s-master-01:443 --insecure-skip-tls-verify=true
+${KUBECTL} config --kubeconfig=${KUBECONFIG} set-credentials cluster-admin --username=kube --password=changeme
+${KUBECTL} config --kubeconfig=${KUBECONFIG} set-context k8s --cluster=k8s --user=cluster-admin
+${KUBECTL} config --kubeconfig=${KUBECONFIG} use-context k8s
+fi
+# yaml2json <<EOF
+${KUBECTL} --kubeconfig=${KUBECONFIG} delete pod/mgr01
+${KUBECTL} --kubeconfig=${KUBECONFIG} delete secret/dw-secret
+${KUBECTL} --kubeconfig=${KUBECONFIG} create -f - <<EOF
+---
+apiVersion: v1
+data:
+  id-rsa: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcFFJQkFBS0NBUUVBeXdYTy9GVFhvb0w3dHZHdXlkaCtLZGZmVFFDTkVWejh6Nms3S0lZVWtEd2l3VXBTCkdxMVp6YVVTL3NGeWFWK2F2TDFlRGtPb0wxWkpRMmMzQklvNTJPRktIL2Uxd01ubldkVkJQWXJkK1dnZ2hNeUwKL1lSTXo3eUhQMmtiWUlFY1ZSdTY5eFB5WWlxdlZ2NFEweDQ2M1lWOUJ2aUlLMkF3Q1BiNFkvYXhLak41ZFR0KwpNVVpjUkV5UFFhQ0hkYjlORDFXUnU3R3BWZEZ5d0pHQ2RQWEthdUFLejEzdmxKOWxSUVpjKzZHcVVhMnlnMkVwCjhyVXJ6V05LenZHT2VBNDJjYm5qcWJMQWN6QkVONTJ6YWI1b0MyUmF3WCt5TXV4VWhKMDE3M2FDbmhpeDI1eHoKOWhSSGZoMXQ2bFQybjhuNlM1Z1QyRlFtbC9iQkNPNFRSZFZtVndJREFRQUJBb0lCQVFDZGs5V1REbnNML09SSQptNCtSeFFJdmtna1VxQy9WNFRtc0tHcnRTaHhkMHY4YXpZZXFneEFueUU5VkFtcStGT0Z5U3Z6Y3ozQ1R4VUk2CkdidWZQM1lrdXNBZ3pjLzVZZnk2UWdaUU1SK1cvRlg1SFJZdTRHZ0orUWQwbFMwVm0wQ1ZZbCtjZEpQMTA3R2kKTUxKNFdvZFA5dE1TL1FZYnZKMnI1NXpsWWMwaXRjMVN3UTNuZXVDZE9yYk9OblM3TFlkU0IrTmJPYm9Pb0h2RgpQRHJQKzdHSGl5YWlLSkZtbFNUeDNsbUhoNUVIdmtKRWdDWjlDaVhZSXVUc0ZYOG1WamlXV2FEVU5yWXppcDlnCmorTFhqT2lHN1FidElIalllRzVUMjZtQVV0bGZOTWlzVlVyeE43bDluWVkzb1QyOVdKbHprZjdQWXpPUmwvWHIKOWhpRkgyRjVBb0dCQU9SSDBhLzlnMXRvWGsvaUg1NXBXZHF0NUxvUElsS0FER01EU2o0T28zenRyU3pMN2QxOQpzNTRuSTExWS8xZDNrdUJ1ZVZjc0lXK2tUc3JETVYvS25JYmRBVjVLb1RIU1B4MEY0MmQ3cENwUWV6Y3VicXV0Cm5GSVJHeTVXWnJxYXZiNmdvZkhyQjV5bFRtT2RGODhMWXk0Vlowc2pGeTF2clA5Z3NINjEvelNyQW9HQkFPT3MKMXhhRHpHSkc5SURJcW8wc05qOVEwbGc5V3pMYitqbXJJVjdYTVcwaU9UNHBoNDQ4ZVBhaXY5YUEzU3h3eXh0cwp4UnBDZVllM3pMUHkxaW9Fbm9TUU5KRWVXWmFyY2pwZU56dHVPMnFnd2dGVGNodGxsYlY2cU5TS2VGRldBYzVSCjJqeVpWTithYy8rN2NYK0o4UnUzeW82blNaSUhGRmkxdzI3NHBoMEZBb0dCQUpmVW9NWENBczBZSktwVEJwNngKQ1Y5bUMxd28xcll5am9xSVZLZmp5cDg3NGRPS3EyR0d5cUdrL0dPSTN3UUk5cnFwSDdGNEc2RUtrcEZQdEJZMwpSMVozeGdJMTl2S1JHUU12dUdsS2xnekN6TUVOOC9QaG03Z0Z3cU5XT2l0ZzRsVFl0LzJVU2RMSks5TWJXQXVRClVsNERSRmw0TkdFM0JzUXdSaE53N3hYVEFvR0JBTWs0ZnpqVTc1U0VaYUJVdWZmZmRXcHNRaHZlem5XYTJnS1IKN3dKbGFyZXJvYkFCQUYrRHJ0MDhaaFJzL0ExRSt4MlgrblFGQUdnazEvVEswT0YrQjZQZDE3ZlNmUmVmRzJ2ZQp6UzNuZFBmK2NMaS9TWUJSUGdtUkNSb2Y3OHJqR3VHQWtrTXd1VVNPdTZydnZaWWRFazJQR0tVUDBRUVE0Yml0Cm5MYTlhQU1KQW9HQU1VS2Y4Q0h4alFiNUlLUGJ4YlozZzJCNVB6YVF0anNEWU5pS2JIM0JaUVVIQm1HWkpKdUUKVUwyMnYvVi9tU2djOXhCaFIzRkZOTnZDOWZpQnh6K2g3VDFZMk9peDhZTHFDdXFPREE3VGRCWW5wKzRQbzdjTgpKcEpKSlNTQTJ3WGI5ejJqQmJZaEZ5K3FGcUV6NHBMeURVNUJPL2l3NCtJYUJBRmk1NlZmRXVVPQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+  id-rsa.pub: c3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBREFRQUJBQUFCQVFETEJjNzhWTmVpZ3Z1MjhhN0oySDRwMTk5TkFJMFJYUHpQcVRzb2hoU1FQQ0xCU2xJYXJWbk5wUkwrd1hKcFg1cTh2VjRPUTZndlZrbERaemNFaWpuWTRVb2Y5N1hBeWVkWjFVRTlpdDM1YUNDRXpJdjloRXpQdkljL2FSdGdnUnhWRzdyM0UvSmlLcTlXL2hEVEhqcmRoWDBHK0lncllEQUk5dmhqOXJFcU0zbDFPMzR4Umx4RVRJOUJvSWQxdjAwUFZaRzdzYWxWMFhMQWtZSjA5Y3BxNEFyUFhlK1VuMlZGQmx6N29hcFJyYktEWVNueXRTdk5ZMHJPOFk1NERqWnh1ZU9wc3NCek1FUTNuYk5wdm1nTFpGckJmN0l5N0ZTRW5UWHZkb0tlR0xIYm5IUDJGRWQrSFczcVZQYWZ5ZnBMbUJQWVZDYVg5c0VJN2hORjFXWlggZ2x1b25AbWVzb24K
+kind: Secret
+metadata:
+  name: dw-secret
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mgr01
+  namespace: default
+  labels:
+    app: mgr-01
+spec:
+  restartPolicy: Never
+  containers:
+  - name: step-00
+    privileged: true
+    image: ubuntu-15.04:dind
+    imagePullPolicy: IfNotPresent
+    args:
+    - /bin/bash
+    -  -xc
+    - "CMD=\${WRK_MGR_DIR}/\${WRK_STEP}; while ! [[ -e \${CMD} ]]; do printf '.'; sleep 1; done; echo; \${CMD}; ls -al /status"
+    volumeMounts:
+    - name: docker-socket
+      mountPath: /run/docker.sock
+    - name: var-lib-docker
+      mountPath:  /var/lib/docker
+    - name: docker
+      mountPath:  /usr/bin/docker
+    - name: mgr
+      mountPath: /mgr
+    - name: repo
+      mountPath: /repo
+    - name: dw-secret
+      mountPath: /secret
+    - name: status
+      mountPath: /status
+    env:
+    - name: WRK_MGR
+      value: https://github.com/davidwalter0/mgr
+    - name: WRK_STEP
+      value: step-00
+    - name: WRK_MGR_DIR
+      value: /mgr
+    - name: WRK_REPO_PATH
+      value: /repo
+    - name: WRK_STATUS_PATH
+      value: /status
+  - name: step-01
+    privileged: true
+    image: ubuntu-15.04:dind
+    imagePullPolicy: IfNotPresent
+    args:
+    - /bin/bash
+    -  -xc
+    - "CMD=\${WRK_MGR_DIR}/\${WRK_STEP}; while ! [[ -e \${CMD} ]]; do printf .; sleep 1; done; echo; \${CMD}; ls -l /status"
+    volumeMounts:
+    - name: docker-socket
+      mountPath: /run/docker.sock
+    - name: var-lib-docker
+      mountPath:  /var/lib/docker
+    - name: docker
+      mountPath:  /usr/bin/docker
+    - name: mgr
+      mountPath: /mgr
+    - name: repo
+      mountPath: /repo
+    - name: dw-secret
+      mountPath: /secret
+    - name: status
+      mountPath: /status
+    env:
+    - name: WRK_MGR
+      value: https://github.com/davidwalter0/mgr
+    - name: WRK_STEP
+      value: step-01
+    - name: WRK_MGR_DIR
+      value: /mgr
+    - name: WRK_REPO_PATH
+      value: /repo
+    - name: WRK_STATUS_PATH
+      value: /status
+  - name: mgr
+    privileged: true
+    image: ubuntu-15.04:dind
+    imagePullPolicy: IfNotPresent
+    command: [ "/bin/bash", "-xc" ]
+    args:
+    - "cd \${WRK_REPO_DIR}; git clone \${WRK_MGR} \${WRK_MGR_DIR}/; CMD=\${WRK_MGR_DIR}/\${WRK_STEP}; \${WRK_MGR_DIR}/\${WRK_STEP}; ls -l /status"
+    env:
+    - name: WRK_MGR
+      value: https://github.com/davidwalter0/mgr
+    - name: WRK_STEP
+      value: mgr
+    - name: WRK_STEPS
+      value: "2"
+    - name: WRK_MGR_DIR
+      value: /mgr
+    - name: WRK_STEP_RETRIES
+      value: "1"
+    - name: WRK_STATUS_PATH
+      value: /status
+    volumeMounts:
+    - name: docker-socket
+      mountPath: /run/docker.sock
+    - name: var-lib-docker
+      mountPath:  /var/lib/docker
+    - name: docker
+      mountPath:  /usr/bin/docker
+    - name: mgr
+      mountPath: /mgr
+    - name: repo
+      mountPath: /repo
+    - name: status
+      mountPath: /status
+    - name: dw-secret
+      mountPath: /secret
+  volumes:
+  - name: docker-socket
+    hostPath:
+      path: /run/docker.sock
+  - name: var-lib-docker
+    hostPath:
+      path: /var/lib/docker
+  - name: docker
+    hostPath:
+      path: /usr/bin/docker
+  - name: mgr
+    emptyDir: {}
+  - name: repo
+    emptyDir: {}
+  - name: status
+    emptyDir: {}
+  - name: dw-secret
+    secret:
+      secretName: dw-secret
+EOF
