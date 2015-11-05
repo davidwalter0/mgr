@@ -1,4 +1,9 @@
 ```
+sed  -i -e 's,# setsebool -P docker_transition_unconfined 1,# setsebool -P docker_transition_unconfined 1,g' -e "s,OPTIONS='--selinux-enabled',# OPTIONS='--selinux-enabled',g" /etc/sysconfig/docker
+```
+
+
+```
 #!/bin/bash
 ```
 

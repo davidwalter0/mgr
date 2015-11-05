@@ -1,0 +1,18 @@
+#!/bin/sh
+apk add --update curl wget git python bash && rm -rf /var/cache/apk/*
+# sh /usr/local/bin/dind docker daemon --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=vfs &
+echo waiting for docker to start
+until docker --host=tcp://127.0.0.1:2375 ps -a > /dev/null ; do printf . ; sleep 1; done
+echo docker should be up.
+docker --host=tcp://127.0.0.1:2375 ps -a
+ls -l /secret
+git clone https://github.com/docker-library/hello-world.git
+cd hello-world/
+cat Dockerfile
+docker --host=tcp://127.0.0.1:2375 build --force-rm --rm --tag hello .
+docker --host=tcp://127.0.0.1:2375 ps -a
+docker --host=tcp://127.0.0.1:2375 run hello
+docker --host=tcp://127.0.0.1:2375 ps -a
+docker --host=tcp://127.0.0.1:2375 images
+set
+touch ${WRK_STATUS_PATH}/${step}.done

@@ -1,0 +1,163 @@
+#!/bin/bash
+# from https://github.com/docker-library/docker/blob/20e81e7474e54f9edbb33c931e4731ef6c5b8335/1.9-rc/dind/dockerd-entrypoint.sh
+# docker in docker may be usable via the following recipe
+<<EOF
+#!/bin/sh
+set -e
+
+if [ "$#" -eq 0 -o "${1:0:1}" = '-' ]; then
+	set -- docker daemon \
+		--host=unix:///var/run/docker.sock \
+		--host=tcp://0.0.0.0:2375 \
+		--storage-driver=vfs \
+		"$@"
+fi
+
+if [ "$1" = 'docker' -a "$2" = 'daemon' ]; then
+	# if we're running Docker, let's pipe through dind
+	# (and we'll run dind explicitly with "sh" since its shebang is /bin/bash)
+	set -- sh "$(which dind)" "$@"
+fi
+
+exec "$@"
+EOF
+
+
+KUBECTL=bin/kubectl
+KUBECONFIG=.cfg/.k8s-master-01.cfg
+if (( 1 )) ; then
+${KUBECTL} config --kubeconfig=${KUBECONFIG} set-cluster k8s --server=https://k8s-master-01:443 --insecure-skip-tls-verify=true
+${KUBECTL} config --kubeconfig=${KUBECONFIG} set-credentials cluster-admin --username=kube --password=changeme
+${KUBECTL} config --kubeconfig=${KUBECONFIG} set-context k8s --cluster=k8s --user=cluster-admin
+${KUBECTL} config --kubeconfig=${KUBECONFIG} use-context k8s
+fi
+# yaml2json <<EOF
+${KUBECTL} --kubeconfig=${KUBECONFIG} delete pod/mgr-dind
+# ${KUBECTL} --kubeconfig=${KUBECONFIG} delete secret/dw-secret
+${KUBECTL} --kubeconfig=${KUBECONFIG} create -f - <<EOF
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mgr-dind
+  namespace: default
+  labels:
+    app: mgr-dind
+
+# docker service instance to pair execution with
+#    docker run --privileged --name some-docker -d 
+# docker client test connect with this docker version
+#    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock docker version
+spec:
+  restartPolicy: Never
+  containers:
+  - name: step-00
+    privileged: true
+    # docker run --privileged --name some-docker -d 
+    image: docker:1.8-dind
+    imagePullPolicy: IfNotPresent
+    args:
+    - /bin/sh
+    -  -xc
+    - "CMD=\${WRK_MGR_DIR}/\${WRK_STEP}; while ! [[ -x \${CMD} ]]; do printf '.'; ls -l /mgr /status; sleep 1; done; echo; /bin/sh \${CMD}; /usr/local/bin/docker-entrypoint.sh; ls -l /mgr /status"
+    volumeMounts:
+    - name: var-run
+      mountPath: /run/
+    - name: var-run
+      mountPath: /var/run
+    - name: var-lib-docker
+      mountPath:  /var/lib/docker
+    - name: mgr
+      mountPath: /mgr
+    - name: repo
+      mountPath: /repo
+    - name: status
+      mountPath: /status
+    env:
+    - name: WRK_MGR
+      value: https://github.com/davidwalter0/mgr
+    - name: WRK_STEP
+      value: step-00
+    - name: WRK_MGR_DIR
+      value: /mgr
+    - name: WRK_REPO_PATH
+      value: /repo
+    - name: WRK_STATUS_PATH
+      value: /status
+  - name: step-01
+    privileged: true
+    image: ubuntu-15.04:dind
+    imagePullPolicy: IfNotPresent
+    args:
+    - /bin/bash
+    -  -xc
+    - "CMD=\${WRK_MGR_DIR}/\${WRK_STEP}; while true || ! [[ -x \${CMD} ]]; do printf .; sleep 1; done; echo; \${CMD}; ls -l /status"
+    volumeMounts:
+    - name: var-run
+      mountPath: /run/
+    - name: var-run
+      mountPath: /var/run
+    - name: var-lib-docker
+      mountPath:  /var/lib/docker
+    - name: mgr
+      mountPath: /mgr
+    - name: repo
+      mountPath: /repo
+    - name: status
+      mountPath: /status
+    env:
+    - name: WRK_MGR
+      value: https://github.com/davidwalter0/mgr
+    - name: WRK_STEP
+      value: step-01
+    - name: WRK_MGR_DIR
+      value: /mgr
+    - name: WRK_REPO_PATH
+      value: /repo
+    - name: WRK_STATUS_PATH
+      value: /status
+  - name: mgr
+    privileged: true
+    image: ubuntu-15.04:dind
+    imagePullPolicy: IfNotPresent
+    command: [ "/bin/bash", "-xc" ]
+    args:
+    - "cd \${WRK_REPO_DIR}; git clone \${WRK_MGR} \${WRK_MGR_DIR}/; CMD=\${WRK_MGR_DIR}/\${WRK_STEP}; \${WRK_MGR_DIR}/\${WRK_STEP}; ls -l /status"
+    env:
+    - name: WRK_MGR
+      value: https://github.com/davidwalter0/mgr
+    - name: WRK_STEP
+      value: mgr
+    - name: WRK_STEPS
+      value: "2"
+    - name: WRK_MGR_DIR
+      value: /mgr
+    - name: WRK_STEP_RETRIES
+      value: "1"
+    - name: WRK_STATUS_PATH
+      value: /status
+    volumeMounts:
+    - name: var-run
+      mountPath: /run/
+    - name: var-run
+      mountPath: /var/run/
+    - name: var-lib-docker
+      mountPath:  /var/lib/docker
+    - name: mgr
+      mountPath: /mgr
+    - name: repo
+      mountPath: /repo
+    - name: status
+      mountPath: /status
+  volumes:
+  - name: var-run
+    emptydir: {}
+  - name: var-lib-docker
+    emptydir: {}
+  - name: mgr
+    emptyDir: {}
+  - name: repo
+    emptyDir: {}
+  - name: status
+    emptyDir: {}
+EOF

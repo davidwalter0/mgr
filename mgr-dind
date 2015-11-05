@@ -1,11 +1,10 @@
-#!/bin/bash -x
+#!/bin/bash
 dir=$(dirname $(readlink -f ${0}))
 mkdir -p ${dir}/.cfg
 . ${dir}/.cfg/setup
 
 ${KUBECTL} --kubeconfig=${KUBECONFIG} delete pod/mgr01
 ${KUBECTL} --kubeconfig=${KUBECONFIG} delete secret/dw-secret
-exit 0
 ${KUBECTL} --kubeconfig=${KUBECONFIG} create -f - <<EOF
 ---
 apiVersion: v1
@@ -26,19 +25,18 @@ metadata:
 spec:
   restartPolicy: Never
   containers:
-  - name: step-00
+  - name: dind
     privileged: true
-    image: ubuntu-15.04:dind
+    image: docker:1.8-dind
+    # image: docker.io/docker:1.8-dind
     imagePullPolicy: IfNotPresent
-    args:
-    - /bin/bash
-    -  -xc
-    - "CMD=\${WRK_MGR_DIR}/\${WRK_STEP}; while ! [[ -e \${CMD} ]]; do printf '.'; sleep 1; done; echo; \${CMD}; ls -al /status"
+    ports:
+    - containerPort: 2375
+      name: docker
+      protocol: TCP
     volumeMounts:
-    - name: docker-socket
-      mountPath: /run/docker.sock
     - name: var-lib-docker
-      mountPath:  /var/lib/docker
+      mountPath: /var/lib/docker
     - name: mgr
       mountPath: /mgr
     - name: repo
@@ -51,26 +49,25 @@ spec:
     - name: WRK_MGR
       value: https://github.com/davidwalter0/mgr
     - name: WRK_STEP
-      value: step-00
+      value: step-dind-00
     - name: WRK_MGR_DIR
       value: /mgr
     - name: WRK_REPO_PATH
       value: /repo
     - name: WRK_STATUS_PATH
       value: /status
-  - name: step-01
+  - name: step-00
     privileged: true
-    image: ubuntu-15.04:dind
+    image: alpine-docker-tools
     imagePullPolicy: IfNotPresent
+    command: 
+    - /bin/sh
     args:
-    - /bin/bash
     -  -xc
     - "CMD=\${WRK_MGR_DIR}/\${WRK_STEP}; while ! [[ -e \${CMD} ]]; do printf .; sleep 1; done; echo; \${CMD}; ls -l /status"
     volumeMounts:
-    - name: docker-socket
-      mountPath: /run/docker.sock
     - name: var-lib-docker
-      mountPath:  /var/lib/docker
+      mountPath: /var/lib/docker
     - name: mgr
       mountPath: /mgr
     - name: repo
@@ -83,7 +80,7 @@ spec:
     - name: WRK_MGR
       value: https://github.com/davidwalter0/mgr
     - name: WRK_STEP
-      value: step-01
+      value: step-dind-00
     - name: WRK_MGR_DIR
       value: /mgr
     - name: WRK_REPO_PATH
@@ -92,7 +89,7 @@ spec:
       value: /status
   - name: mgr
     privileged: true
-    image: ubuntu-15.04:dind
+    image: alpine-docker-tools
     imagePullPolicy: IfNotPresent
     command: [ "/bin/bash", "-xc" ]
     args:
@@ -101,9 +98,9 @@ spec:
     - name: WRK_MGR
       value: https://github.com/davidwalter0/mgr
     - name: WRK_STEP
-      value: mgr
+      value: mgr-dind-run
     - name: WRK_STEPS
-      value: "2"
+      value: "1"
     - name: WRK_MGR_DIR
       value: /mgr
     - name: WRK_STEP_RETRIES
@@ -120,12 +117,14 @@ spec:
     - name: dw-secret
       mountPath: /secret
   volumes:
-  - name: docker-socket
-    hostPath:
-      path: /run/docker.sock
+  # - name: docker-socket
+  #   hostPath:
+  #     path: /run/docker.sock
+  # - name: var-lib-docker
+  #   hostPath:
+  #     path: /var/lib/docker
   - name: var-lib-docker
-    hostPath:
-      path: /var/lib/docker
+    emptyDir: {}
   - name: mgr
     emptyDir: {}
   - name: repo
@@ -136,3 +135,13 @@ spec:
     secret:
       secretName: dw-secret
 EOF
+
+echo sleeping 10 seconds
+sleep 10
+${KUBECTL} --kubeconfig=${KUBECONFIG} logs mgr01 mgr
+${KUBECTL} --kubeconfig=${KUBECONFIG} get po/mgr01 -o wide
+${KUBECTL} --kubeconfig=${KUBECONFIG} describe po/mgr01
+sleep 10
+${KUBECTL} --kubeconfig=${KUBECONFIG} get po/mgr01 -o wide
+${KUBECTL} --kubeconfig=${KUBECONFIG} describe po/mgr01
+${KUBECTL} --kubeconfig=${KUBECONFIG} logs mgr01 mgr
